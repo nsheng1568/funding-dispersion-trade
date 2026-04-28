@@ -1,0 +1,11 @@
+pandas
+requests
+pyarrow
+pyyaml
+scikit-learn
+statsmodels
+APScheduler
+streamlit
+python-dotenv
+jupyter
+hyperliquid-python-sdk
