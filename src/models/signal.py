@@ -19,6 +19,7 @@ import pandas as pd
 
 from src.constants import SIGNAL_HORIZON_DAYS
 from src.data import hl_client
+from src.models.betas import estimate_betas
 
 DATA_DIR = Path("data")
 
@@ -148,9 +149,16 @@ def _refresh_funding(coins: list[str]) -> pd.DataFrame:
     return updated
 
 
-def run() -> pd.Series:
-    print("Loading betas...")
-    betas = pd.read_parquet(DATA_DIR / "coin_betas.parquet").astype(float)
+def run(refresh_betas: bool = False) -> pd.Series:
+    if refresh_betas:
+        print("Estimating betas from current prices...")
+        prices_all = pd.read_parquet(DATA_DIR / "prices.parquet")
+        betas = estimate_betas(prices_all)
+        betas.to_parquet(DATA_DIR / "coin_betas.parquet")
+    else:
+        print("Loading betas...")
+        betas = pd.read_parquet(DATA_DIR / "coin_betas.parquet").astype(float)
+
     valid_coins = [
         c for c in betas.index
         if betas.loc[c, "beta"] > 0 and betas.loc[c, "idio_vol"] > 0
