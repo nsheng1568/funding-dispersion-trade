@@ -5,10 +5,17 @@ import time
 _HL_URL = "https://api.hyperliquid.xyz/info"
 
 
-def _post(payload: dict) -> any:
-    resp = requests.post(_HL_URL, json=payload, timeout=15)
+def _post(payload: dict, retries: int = 5) -> any:
+    delay = 2.0
+    for _ in range(retries):
+        resp = requests.post(_HL_URL, json=payload, timeout=15)
+        if resp.status_code == 429:
+            time.sleep(delay)
+            delay *= 2
+            continue
+        resp.raise_for_status()
+        return resp.json()
     resp.raise_for_status()
-    return resp.json()
 
 
 def get_universe() -> pd.DataFrame:
@@ -23,15 +30,26 @@ def get_universe() -> pd.DataFrame:
 
 
 def get_funding_history(coin: str, start_ms: int) -> pd.DataFrame:
-    """Returns 8h funding rate history for a coin since start_ms (Unix ms)."""
-    data = _post({"type": "fundingHistory", "coin": coin, "startTime": start_ms})
-    if not data:
+    """Returns hourly funding rate history for a coin since start_ms, paginating past the 500-record API cap."""
+    pages = []
+    cursor = start_ms
+    while True:
+        data = _post({"type": "fundingHistory", "coin": coin, "startTime": cursor})
+        if not data:
+            break
+        pages.append(data)
+        if len(data) < 500:
+            break
+        # advance past the last record to avoid re-fetching it
+        cursor = data[-1]["time"] + 1
+        time.sleep(0.05)
+    if not pages:
         return pd.DataFrame(columns=["fundingRate", "premium"])
-    df = pd.DataFrame(data)
+    df = pd.DataFrame([row for page in pages for row in page])
     df["time"] = pd.to_datetime(df["time"], unit="ms", utc=True)
     df["fundingRate"] = df["fundingRate"].astype(float)
     df["premium"] = df["premium"].astype(float)
-    return df[["time", "fundingRate", "premium"]].set_index("time")
+    return df[["time", "fundingRate", "premium"]].drop_duplicates("time").set_index("time")
 
 
 def get_candles(coin: str, interval: str, start_ms: int, end_ms: int) -> pd.DataFrame:
