@@ -18,7 +18,6 @@ from src.models.signal import MAX_LEVERAGE
 HISTORY_DIR = Path("data/history")
 DATA_DIR    = Path("data")
 
-st.set_page_config(page_title="Analytics", layout="wide")
 st.title("Analytics")
 
 
@@ -130,25 +129,44 @@ with tab2:
         st.info("No betas file found. Commit `data/coin_betas.parquet` to the repo "
                 "after running `python -m src.models.betas`.")
     else:
-        display_cols = [c for c in
-                        ["beta", "idio_vol_ann", "r_squared", "idio_vol", "total_vol"]
-                        if c in betas.columns]
-        df = betas[display_cols].sort_values("beta", ascending=False).reset_index()
-        df.columns = ["Coin"] + [c.replace("_", " ").title() for c in display_cols]
+        import numpy as np
+        ANN = np.sqrt(365 * 3)  # 8h periods per year
+
+        df = betas.copy().sort_values("beta", ascending=False).reset_index()
+        df = df.rename(columns={"index": "Coin"})
+
+        # Annualise per-period vols (raw cols are per 8h)
+        if "idio_vol" in df.columns and "idio_vol_ann" not in df.columns:
+            df["idio_vol_ann"] = df["idio_vol"] * ANN
+        if "total_vol" in df.columns:
+            df["total_vol_ann"] = df["total_vol"] * ANN
+
+        # Build display table
+        disp = pd.DataFrame()
+        disp["Coin"]          = df["Coin"]
+        disp["Beta"]          = df["beta"].round(2)
+        if "idio_vol_ann" in df.columns:
+            disp["Idio Vol (Ann)"]  = (df["idio_vol_ann"] * 100).round(1).astype(str) + "%"
+        if "total_vol_ann" in df.columns:
+            disp["Total Vol (Ann)"] = (df["total_vol_ann"] * 100).round(1).astype(str) + "%"
+        if "r_squared" in df.columns:
+            disp["R²"]              = df["r_squared"].round(2)
 
         col_a, col_b = st.columns([2, 1])
         with col_a:
-            st.dataframe(df, width='stretch', hide_index=True,
-                         height=min(600, len(df) * 36 + 40))
+            st.dataframe(disp, width='stretch', hide_index=True,
+                         height=min(600, len(disp) * 36 + 40))
         with col_b:
-            if "beta" in betas.columns and "idio_vol_ann" in betas.columns:
+            if "idio_vol_ann" in df.columns:
+                scatter_df = df.copy()
+                scatter_df["idio_vol_ann_pct"] = scatter_df["idio_vol_ann"] * 100
                 fig = px.scatter(
-                    betas.reset_index(),
-                    x="beta", y="idio_vol_ann",
-                    text="index",
+                    scatter_df,
+                    x="beta", y="idio_vol_ann_pct",
+                    text="Coin",
                     labels={"beta": "Market Beta",
-                            "idio_vol_ann": "Annualised Idio Vol",
-                            "index": "Coin"},
+                            "idio_vol_ann_pct": "Idio Vol (Ann)",
+                            "Coin": "Coin"},
                     title="Beta vs Idiosyncratic Vol",
                 )
                 fig.update_traces(textposition="top center", textfont_size=9)

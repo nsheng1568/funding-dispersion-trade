@@ -30,6 +30,7 @@ build/
 # IDE
 .vscode/
 .idea/
+.claude/
 
 # Logs
 *.log
