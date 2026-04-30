@@ -6,6 +6,7 @@ scikit-learn
 statsmodels
 APScheduler
 streamlit
+plotly
 python-dotenv
 jupyter
 hyperliquid-python-sdk
