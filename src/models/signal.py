@@ -29,7 +29,7 @@ ROLL_WINDOW      = 24 * 30     # 30-day rolling OLS window (hours)
 HORIZON_H        = SIGNAL_HORIZON_DAYS * 24
 TARGET_ANN_VOL   = 0.40
 ANN_FACTOR       = np.sqrt(3 * 365)   # 8h periods per year
-MAX_LEVERAGE     = 5.0
+MAX_LEVERAGE     = 4.0
 
 
 def _direct_forecast_now(funding_col: pd.Series, target_col: pd.Series) -> float:

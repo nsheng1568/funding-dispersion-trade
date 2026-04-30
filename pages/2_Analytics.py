@@ -114,7 +114,7 @@ with tab1:
             height=max(300, n * 22),
         )
         fig.add_vline(x=0, line_dash="dash", line_color="white", opacity=0.3)
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
 
         st.caption(f"Snapshot as of {latest_ts:%Y-%m-%d %H:%M UTC}  ·  "
                    f"{n} coins  ·  spread = {spread:.4f}")
@@ -154,7 +154,7 @@ with tab2:
 
         col_a, col_b = st.columns([2, 1])
         with col_a:
-            st.dataframe(disp, width='stretch', hide_index=True,
+            st.dataframe(disp, use_container_width=True, hide_index=True,
                          height=min(600, len(disp) * 36 + 40))
         with col_b:
             if "idio_vol_ann" in df.columns:
@@ -171,7 +171,7 @@ with tab2:
                 )
                 fig.update_traces(textposition="top center", textfont_size=9)
                 fig.update_layout(margin=dict(l=0, r=0, t=40, b=0), height=400)
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
@@ -199,12 +199,12 @@ with tab3:
         )
         fig.add_hline(y=0, line_dash="dash", line_color="white", opacity=0.3)
         fig.update_layout(margin=dict(l=0, r=0, t=40, b=0), height=400)
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
 
         # Target portfolio history
         if not tgt_hist.empty:
             st.subheader("Target Portfolio History")
             st.dataframe(
                 tgt_hist.sort_values("timestamp", ascending=False).head(20),
-                width='stretch', hide_index=True,
+                use_container_width=True, hide_index=True,
             )

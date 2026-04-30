@@ -108,7 +108,7 @@ else:
     pos = state["positions"].copy()
     pos["Notional ($)"] = pos["Notional ($)"].map("${:,.2f}".format)
     pos["Unr. PnL ($)"] = pos["Unr. PnL ($)"].map("${:+,.2f}".format)
-    st.dataframe(pos, width='stretch', hide_index=True)
+    st.dataframe(pos, use_container_width=True, hide_index=True)
 
 st.divider()
 
@@ -125,7 +125,7 @@ else:
     fig.update_traces(line_color="#00b4d8", fillcolor="rgba(0,180,216,0.15)")
     fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=300,
                       yaxis=dict(rangemode="normal"))
-    st.plotly_chart(fig, width='stretch')
+    st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
 
@@ -149,7 +149,7 @@ else:
             labels={"notional": "Signed Notional ($)", "timestamp": ""},
         )
         fig2.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=300)
-        st.plotly_chart(fig2, width='stretch')
+        st.plotly_chart(fig2, use_container_width=True)
 
 st.caption(f"Live data cached 2 min · history cached 10 min · "
            f"vault `{VAULT_ADDRESS[:10]}...`")

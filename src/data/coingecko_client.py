@@ -1,7 +1,10 @@
+import time
+
 import requests
 import pandas as pd
 
 _CG_URL = "https://api.coingecko.com/api/v3"
+_RETRY_DELAYS = [10, 30, 60]
 
 
 def get_markets(vs_currency: str = "usd", per_page: int = 250) -> pd.DataFrame:
@@ -13,7 +16,12 @@ def get_markets(vs_currency: str = "usd", per_page: int = 250) -> pd.DataFrame:
         "page": 1,
         "sparkline": False,
     }
-    resp = requests.get(f"{_CG_URL}/coins/markets", params=params, timeout=15)
-    resp.raise_for_status()
+    for attempt, delay in enumerate(_RETRY_DELAYS + [None]):
+        resp = requests.get(f"{_CG_URL}/coins/markets", params=params, timeout=15)
+        if resp.status_code == 429 and delay is not None:
+            time.sleep(delay)
+            continue
+        resp.raise_for_status()
+        break
     df = pd.DataFrame(resp.json())
     return df[["id", "symbol", "name", "current_price", "market_cap", "total_volume"]].copy()
