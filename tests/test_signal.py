@@ -4,8 +4,10 @@ import pytest
 
 from src.models.signal import (
     _direct_forecast_now,
+    compute_signal,
     size_position,
     ANN_FACTOR,
+    HORIZON_H,
     MAX_LEVERAGE,
     ROLL_WINDOW,
     TARGET_ANN_VOL,
@@ -97,6 +99,29 @@ def test_exact_linear_recovery(forecast_series):
     pred = _direct_forecast_now(f_series, t_series)
     expected = a_true + b_true * f_vals[-1]
     assert abs(pred - expected) / abs(expected) < 1e-6
+
+
+# ---------------------------------------------------------------------------
+# compute_signal tests
+# ---------------------------------------------------------------------------
+
+def test_compute_signal_orders_by_funding_level():
+    """Coin with consistently higher funding rate gets a higher signal value."""
+    n = ROLL_WINDOW + HORIZON_H + 200
+    idx = pd.date_range("2024-01-01", periods=n, freq="h")
+
+    funding = pd.DataFrame(
+        {"LOW": np.full(n, 0.0001), "HIGH": np.full(n, 0.0005)},
+        index=idx,
+    )
+    betas = pd.DataFrame(
+        {"beta": {"LOW": 1.0, "HIGH": 1.0}, "idio_vol": {"LOW": 0.001, "HIGH": 0.001}}
+    )
+
+    signal = compute_signal(funding, betas)
+
+    assert set(signal.index) == {"LOW", "HIGH"}
+    assert signal["HIGH"] > signal["LOW"]
 
 
 def test_causal_constraint(forecast_series):

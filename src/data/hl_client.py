@@ -1,11 +1,13 @@
-import requests
-import pandas as pd
 import time
+from typing import Any
+
+import pandas as pd
+import requests
 
 _HL_URL = "https://api.hyperliquid.xyz/info"
 
 
-def _post(payload: dict, retries: int = 5) -> any:
+def _post(payload: dict, retries: int = 5) -> Any:
     delay = 2.0
     for _ in range(retries):
         resp = requests.post(_HL_URL, json=payload, timeout=15)

@@ -10,6 +10,7 @@ Usage:
 
 import argparse
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -62,7 +63,7 @@ def fit_market_factor(prices: pd.DataFrame) -> pd.Series:
 
 
 def estimate_betas(
-    prices: pd.DataFrame, lookback_days: int = None
+    prices: pd.DataFrame, lookback_days: Optional[int] = None
 ) -> pd.DataFrame:
     """
     Estimate per-coin betas by regressing 8h returns on the PCA market factor.

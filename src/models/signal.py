@@ -19,16 +19,17 @@ import pandas as pd
 
 from src.constants import SIGNAL_HORIZON_DAYS
 from src.data import hl_client
+from src.data.loader import load_betas
 from src.models.betas import estimate_betas
 
 DATA_DIR = Path("data")
 
-BEST_HLS    = [168, 72]     # EWMA half-lives calibrated in notebook 03 (hours)
-ROLL_WINDOW = 24 * 30       # 30-day rolling OLS window (hours)
-HORIZON_H   = SIGNAL_HORIZON_DAYS * 24
-TARGET_ANN_VOL = 0.40
-ANN_FACTOR     = np.sqrt(3 * 365)   # 8h periods per year
-MAX_LEVERAGE   = 5.0
+BEST_HLS         = [168, 72]   # EWMA half-lives calibrated in notebook 03 (hours)
+ROLL_WINDOW      = 24 * 30     # 30-day rolling OLS window (hours)
+HORIZON_H        = SIGNAL_HORIZON_DAYS * 24
+TARGET_ANN_VOL   = 0.40
+ANN_FACTOR       = np.sqrt(3 * 365)   # 8h periods per year
+MAX_LEVERAGE     = 5.0
 
 
 def _direct_forecast_now(funding_col: pd.Series, target_col: pd.Series) -> float:
@@ -119,7 +120,7 @@ def size_position(
     return L, S
 
 
-def _refresh_funding(coins: list[str]) -> pd.DataFrame:
+def refresh_funding(coins: list[str]) -> pd.DataFrame:
     """Fetch any hourly funding records newer than what's in the parquet."""
     path = DATA_DIR / "funding_rates.parquet"
     if not path.exists():
@@ -155,18 +156,15 @@ def run(refresh_betas: bool = False) -> pd.Series:
         prices_all = pd.read_parquet(DATA_DIR / "prices.parquet")
         betas = estimate_betas(prices_all)
         betas.to_parquet(DATA_DIR / "coin_betas.parquet")
+        betas = betas[(betas["beta"] > 0) & (betas["idio_vol"] > 0)]
     else:
         print("Loading betas...")
-        betas = pd.read_parquet(DATA_DIR / "coin_betas.parquet").astype(float)
+        betas = load_betas()
 
-    valid_coins = [
-        c for c in betas.index
-        if betas.loc[c, "beta"] > 0 and betas.loc[c, "idio_vol"] > 0
-    ]
-    betas = betas.loc[valid_coins]
+    valid_coins = list(betas.index)
 
     print(f"Refreshing funding data for {len(valid_coins)} coins...")
-    raw = _refresh_funding(valid_coins)
+    raw = refresh_funding(valid_coins)
     funding = raw[[c for c in valid_coins if c in raw.columns]]
 
     print("Computing composite signal...")
